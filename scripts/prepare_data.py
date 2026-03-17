@@ -15,6 +15,7 @@
 import csv
 import io
 import json
+import re
 import random
 import sys
 from pathlib import Path
@@ -49,16 +50,44 @@ LABEL_COLS = {"诊断", "临床诊断"}
 
 
 def parse_float(val: str) -> float | None:
-    """解析数值，返回 None 表示缺失/无效。"""
+    """解析数值，支持 '<0.5' / '>100' 前缀，返回 None 表示缺失/无效。"""
     if val is None:
         return None
     v = val.strip()
     if v in ("", "—", "-", "N/A", "nan", "NaN", "NULL"):
         return None
+    # Strip leading comparison operators
+    v = re.sub(r"^[<>≤≥]\s*", "", v)
     try:
         return float(v)
     except ValueError:
         return None
+
+
+def parse_age(val: str) -> int | None:
+    """Parse Chinese age strings (e.g. '56岁', '3月', '9日') → integer years."""
+    if val is None:
+        return None
+    v = str(val).strip()
+    if v in ("", "岁"):
+        return None
+    # "56岁" or bare "56"
+    m = re.match(r"^(\d+(?:\.\d+)?)\s*(岁|年)?$", v)
+    if m:
+        return max(0, int(float(m.group(1))))
+    # months
+    m = re.match(r"^(\d+)\s*(月|个月)$", v)
+    if m:
+        return 0
+    # days / 日 / 天
+    m = re.match(r"^(\d+)\s*(日|天)$", v)
+    if m:
+        return 0
+    # weeks
+    m = re.match(r"^(\d+)\s*(周|w)$", v, re.IGNORECASE)
+    if m:
+        return 0
+    return None
 
 
 def parse_sex(val: str) -> str | None:
@@ -83,10 +112,9 @@ def row_to_case(headers: list[str], row: list[str], row_idx: int) -> dict | None
 
     # ── 患者信息 ────────────────────────────────────────────────
     sex = parse_sex(h2v.get("性别", ""))
-    age_raw = parse_float(h2v.get("年龄", ""))
-    if sex is None or age_raw is None:
+    age = parse_age(h2v.get("年龄", ""))
+    if sex is None or age is None:
         return None   # 性别/年龄缺失，跳过
-    age = int(age_raw)
 
     # ── 检验指标 ────────────────────────────────────────────────
     hb  = parse_float(h2v.get("HGB", ""))
@@ -145,7 +173,7 @@ def row_to_case(headers: list[str], row: list[str], row_idx: int) -> dict | None
 
 def load_csv() -> tuple[list[str], list[dict]]:
     """加载并解析 CSV，返回 (headers_without_sensitive, cases)。"""
-    with open(RAW_CSV, encoding="gbk", newline="") as f:
+    with open(RAW_CSV, encoding="gbk", errors="replace", newline="") as f:
         content = f.read()
 
     reader = csv.reader(io.StringIO(content))
@@ -171,15 +199,22 @@ def load_csv() -> tuple[list[str], list[dict]]:
     return headers, cases
 
 
-def save_cleaned_csv(headers: list[str], cases: list[dict]) -> None:
-    """保存脱敏后的 CSV（删除敏感列）。"""
+def save_cleaned_csv(headers: list[str]) -> None:
+    """Re-read raw CSV and save a cleaned copy with sensitive columns removed."""
     clean_headers = [h for h in headers if h not in SENSITIVE_COLS]
+    sensitive_indices = {i for i, h in enumerate(headers) if h in SENSITIVE_COLS}
     out_path = DATA_DIR / "cleaned_data.csv"
-    # 仅写表头（数据为空时）或实际数据
-    with open(out_path, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.writer(f)
+
+    with open(RAW_CSV, encoding="gbk", errors="replace", newline="") as fin, \
+         open(out_path, "w", encoding="utf-8-sig", newline="") as fout:
+        reader = csv.reader(fin)
+        writer = csv.writer(fout)
+        next(reader)  # skip original header
         writer.writerow(clean_headers)
-        # 有数据时补写行（本次 CSV 为空，此处预留）
+        for row in reader:
+            clean_row = [v for i, v in enumerate(row) if i not in sensitive_indices]
+            writer.writerow(clean_row)
+
     print(f"脱敏 CSV 已保存：{out_path}")
 
 
@@ -211,14 +246,30 @@ def split_and_save(cases: list[dict]) -> None:
     print(f"测试集：    {len(test_set)} 条  → data/test_cases.json")
 
 
+def prepare_db() -> None:
+    """Populate SQLite reference DB from reference_cases.json."""
+    sys.path.insert(0, str(ROOT))
+    from src.data.db import ReferenceDB
+    db_path = DATA_DIR / "medic.db"
+    db = ReferenceDB(db_path)
+    n = db.populate_from_json(DATA_DIR / "reference_cases.json")
+    db.close()
+    stats_db = ReferenceDB(db_path)
+    s = stats_db.stats()
+    stats_db.close()
+    print(f"SQLite DB：{n} 条参考病例 → {db_path}")
+    print(f"  诊断等级分布：{s['by_level']}")
+
+
 def main():
     if not RAW_CSV.exists():
         print(f"错误：找不到 {RAW_CSV}")
         sys.exit(1)
 
     headers, cases = load_csv()
-    save_cleaned_csv(headers, cases)
+    save_cleaned_csv(headers)
     split_and_save(cases)
+    prepare_db()
     print("✅ 数据准备完成")
 
 

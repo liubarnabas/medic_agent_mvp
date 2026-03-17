@@ -1,28 +1,46 @@
 """
 FastAPI 后端
-- /api/diagnose  : IDA 规则引擎（计算链路，无 LLM）
-- /api/generate  : Anthropic LLM 代理（检索链路 / 自然语言描述）
-- /api/health    : 健康检查
+- /api/diagnose   : IDA 规则引擎（计算链路，无 LLM）
+- /api/reference  : 参考病例库相似检索（SQLite，70% 参考集）
+- /api/generate   : Anthropic LLM 代理（检索链路 / 自然语言描述）
+- /api/health     : 健康检查
 
 运行: uvicorn server:app --reload --port 8000
 环境变量: ANTHROPIC_API_KEY
 """
 
 import os
-from fastapi import FastAPI, HTTPException
+from pathlib import Path
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import anthropic
 
 from src.ida import diagnose as ida_diagnose
 from src.ida.models import DiagnosisInput
+from src.data.db import ReferenceDB, DB_PATH
 
 app = FastAPI(title="IDA Diagnostic API")
+
+# Reference DB – opened once at startup (lazy: only if DB file exists)
+_ref_db: ReferenceDB | None = None
+
+
+def get_ref_db() -> ReferenceDB:
+    global _ref_db
+    if _ref_db is None:
+        if not DB_PATH.exists():
+            raise HTTPException(
+                status_code=503,
+                detail="参考病例库尚未初始化，请先运行 scripts/prepare_data.py",
+            )
+        _ref_db = ReferenceDB(DB_PATH)
+    return _ref_db
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_methods=["POST"],
+    allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
 
@@ -78,6 +96,35 @@ async def generate(req: GenerateRequest) -> GenerateResponse:
     return GenerateResponse(text=text)
 
 
+@app.get("/api/reference")
+def reference_similar(
+    hb: float = Query(..., description="血红蛋白 g/L"),
+    mcv: float = Query(..., description="平均红细胞体积 fL"),
+    sex: str = Query(..., description="性别: male | female"),
+    top_k: int = Query(5, ge=1, le=20),
+) -> dict:
+    """
+    从70%参考病例库检索相似病例（按 HGB/MCV 欧氏距离排序）。
+    """
+    if sex not in ("male", "female"):
+        raise HTTPException(status_code=400, detail="sex 必须为 male 或 female")
+    db = get_ref_db()
+    similar = db.find_similar(hb=hb, mcv=mcv, sex=sex, top_k=top_k)
+    return {"count": len(similar), "cases": similar}
+
+
+@app.get("/api/reference/stats")
+def reference_stats() -> dict:
+    """参考病例库统计信息。"""
+    db = get_ref_db()
+    return db.stats()
+
+
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "llm_ready": bool(os.environ.get("ANTHROPIC_API_KEY"))}
+    ref_db_ready = DB_PATH.exists()
+    return {
+        "status": "ok",
+        "llm_ready": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "ref_db_ready": ref_db_ready,
+    }
