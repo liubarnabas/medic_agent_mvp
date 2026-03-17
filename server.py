@@ -1,5 +1,9 @@
 """
-FastAPI 后端 — 代理 Anthropic LLM 调用
+FastAPI 后端
+- /api/diagnose  : IDA 规则引擎（计算链路，无 LLM）
+- /api/generate  : Anthropic LLM 代理（检索链路 / 自然语言描述）
+- /api/health    : 健康检查
+
 运行: uvicorn server:app --reload --port 8000
 环境变量: ANTHROPIC_API_KEY
 """
@@ -9,6 +13,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import anthropic
+
+from src.ida import diagnose as ida_diagnose
+from src.ida.models import DiagnosisInput
 
 app = FastAPI(title="IDA Diagnostic API")
 
@@ -41,6 +48,17 @@ class GenerateRequest(BaseModel):
 
 class GenerateResponse(BaseModel):
     text: str
+
+
+@app.post("/api/diagnose", response_model=dict)
+async def diagnose(req: DiagnosisInput) -> dict:
+    """
+    IDA 计算链路：纯规则引擎，无 LLM。
+    输入：DiagnosisInput JSON
+    输出：DiagnosisOutput JSON
+    """
+    result = ida_diagnose(req)
+    return result.model_dump()
 
 
 @app.post("/api/generate", response_model=GenerateResponse)
