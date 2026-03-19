@@ -2,19 +2,26 @@
 FastAPI 后端
 - /api/diagnose   : IDA 规则引擎（计算链路，无 LLM）
 - /api/reference  : 参考病例库相似检索（SQLite，70% 参考集）
-- /api/generate   : Anthropic LLM 代理（检索链路 / 自然语言描述）
+- /api/generate   : LLM 代理（检索链路 / 自然语言描述）
 - /api/health     : 健康检查
 
 运行: uvicorn server:app --reload --port 8000
-环境变量: ANTHROPIC_API_KEY
+环境变量:
+  - ANTHROPIC_AUTH_TOKEN : API 密钥
+  - ANTHROPIC_BASE_URL   : API 基础地址（可选，默认为 Anthropic 官方）
+  - ANTHROPIC_MODEL      : 模型名称（可选，默认为 claude-haiku-4-5-20251001）
 """
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import anthropic
+
+# 加载 .env 文件中的环境变量
+load_dotenv()
 
 from src.ida import diagnose as ida_diagnose
 from src.ida.models import DiagnosisInput
@@ -50,14 +57,24 @@ _client: anthropic.Anthropic | None = None
 def get_client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        # 优先使用 ANTHROPIC_AUTH_TOKEN，兼容 ANTHROPIC_API_KEY
+        api_key = os.environ.get("ANTHROPIC_AUTH_TOKEN") or os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
             raise HTTPException(
                 status_code=503,
-                detail="ANTHROPIC_API_KEY 环境变量未设置，LLM 功能不可用"
+                detail="ANTHROPIC_AUTH_TOKEN 环境变量未设置，LLM 功能不可用"
             )
-        _client = anthropic.Anthropic(api_key=api_key)
+        base_url = os.environ.get("ANTHROPIC_BASE_URL")
+        if base_url:
+            _client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
+        else:
+            _client = anthropic.Anthropic(api_key=api_key)
     return _client
+
+
+def get_model() -> str:
+    """获取配置的模型名称。"""
+    return os.environ.get("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 
 
 class GenerateRequest(BaseModel):
@@ -87,7 +104,7 @@ async def generate(req: GenerateRequest) -> GenerateResponse:
     client = get_client()
 
     message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+        model=get_model(),
         max_tokens=1024,
         messages=[{"role": "user", "content": req.prompt}],
     )
@@ -123,8 +140,11 @@ def reference_stats() -> dict:
 @app.get("/api/health")
 def health():
     ref_db_ready = DB_PATH.exists()
+    llm_ready = bool(os.environ.get("ANTHROPIC_AUTH_TOKEN") or os.environ.get("ANTHROPIC_API_KEY"))
     return {
         "status": "ok",
-        "llm_ready": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "llm_ready": llm_ready,
+        "llm_model": get_model() if llm_ready else None,
+        "llm_base_url": os.environ.get("ANTHROPIC_BASE_URL"),
         "ref_db_ready": ref_db_ready,
     }
