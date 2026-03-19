@@ -336,18 +336,18 @@ ${activeEvidence}
         </div>
       </div>
 
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: "20px 16px 60px" }} ref={topRef}>
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: "16px 12px 60px" }} ref={topRef}>
 
         {/* ========== INPUT PAGE ========== */}
         {page === "input" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
             {/* 患者基本信息 */}
-            <section style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <section style={{ background: "#fff", borderRadius: 12, padding: "16px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", borderLeft: "3px solid #3b82f6", paddingLeft: 10 }}>
                 患者基本信息
               </h2>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>性别 <span style={{ color: "#dc2626" }}>*</span></label>
                   <div style={{ display: "flex", gap: 8 }}>
@@ -379,11 +379,11 @@ ${activeEvidence}
             </section>
 
             {/* 血常规 */}
-            <section style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <section style={{ background: "#fff", borderRadius: 12, padding: "16px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", borderLeft: "3px solid #10b981", paddingLeft: 10 }}>
                 血常规
               </h2>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14 }}>
                 <NumberInput label="Hb 血红蛋白" unit="g/L" value={lab.Hb} onChange={v => updateLab("Hb", v)} required hint={`参考下限：${patient.sex === "male" ? 120 : 110}`} />
                 <NumberInput label="MCV 平均红细胞体积" unit="fL" value={lab.MCV} onChange={v => updateLab("MCV", v)} required hint="参考下限：80" />
                 <NumberInput label="MCH 平均Hb含量" unit="pg" value={lab.MCH} onChange={v => updateLab("MCH", v)} required hint="参考下限：27" />
@@ -393,11 +393,11 @@ ${activeEvidence}
             </section>
 
             {/* 铁代谢 */}
-            <section style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <section style={{ background: "#fff", borderRadius: 12, padding: "16px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", borderLeft: "3px solid #f59e0b", paddingLeft: 10 }}>
                 铁代谢指标
               </h2>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14 }}>
                 <NumberInput label="SF 血清铁蛋白" unit="μg/L" value={lab.SF} onChange={v => updateLab("SF", v)} required hint="<14 高度提示IDA" />
                 <NumberInput label="血清铁" unit="μmol/L" value={lab.serum_iron} onChange={v => updateLab("serum_iron", v)} required hint="<8.95 为阳性" />
                 <NumberInput label="TIBC 总铁结合力" unit="μmol/L" value={lab.TIBC} onChange={v => updateLab("TIBC", v)} required hint=">64.44 为阳性" />
@@ -407,11 +407,11 @@ ${activeEvidence}
             </section>
 
             {/* 扩展检验 */}
-            <section style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <section style={{ background: "#fff", borderRadius: 12, padding: "16px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", borderLeft: "3px solid #8b5cf6", paddingLeft: 10 }}>
                 扩展检验（可选）
               </h2>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14 }}>
                 <NumberInput label="FEP 红细胞游离原卟啉" unit="μmol/L" value={lab.FEP} onChange={v => updateLab("FEP", v)} hint=">0.9 为阳性" />
                 <NumberInput label="ZPP 锌原卟啉" unit="μmol/L" value={lab.ZPP} onChange={v => updateLab("ZPP", v)} hint=">0.96 为阳性" />
                 <NumberInput label="sTfR 可溶性转铁蛋白受体" unit="nmol/L" value={lab.sTfR} onChange={v => updateLab("sTfR", v)} hint=">26.5 为阳性" />
@@ -429,7 +429,7 @@ ${activeEvidence}
             </section>
 
             {/* 临床信息 */}
-            <section style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <section style={{ background: "#fff", borderRadius: 12, padding: "16px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", borderLeft: "3px solid #ec4899", paddingLeft: 10 }}>
                 临床信息（可选）
               </h2>
@@ -481,22 +481,22 @@ ${activeEvidence}
             }}>
               <div style={{
                 background: LEVEL_STYLES[result.conclusion.level]?.bg || "#6b7280",
-                padding: "20px 24px", display: "flex", alignItems: "center", gap: 16,
+                padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
               }}>
-                <div style={{ fontSize: 36 }}>
+                <div style={{ fontSize: 32 }}>
                   {result.conclusion.level === "确诊" ? "✅" : result.conclusion.level === "提示" ? "⚠️" : result.conclusion.level === "不适用" ? "🚫" : "❌"}
                 </div>
-                <div>
+                <div style={{ flex: "1 1 200px", minWidth: 0 }}>
                   <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>诊断结论</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", lineHeight: 1.3 }}>{result.conclusion.verdict}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", lineHeight: 1.3, wordBreak: "break-word" }}>{result.conclusion.verdict}</div>
                 </div>
                 <div style={{
-                  marginLeft: "auto", padding: "6px 16px", borderRadius: 20,
+                  padding: "6px 16px", borderRadius: 20,
                   background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, fontWeight: 700,
                 }}>{result.conclusion.level}</div>
               </div>
 
-              <div style={{ padding: "18px 24px", display: "flex", gap: 24, flexWrap: "wrap" }}>
+              <div style={{ padding: "14px 20px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
                 {result.severity && (
                   <div><div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 600 }}>贫血程度</div><div style={{ fontSize: 15, fontWeight: 700, color: "#1f2937" }}>{result.severity}</div></div>
                 )}
@@ -509,7 +509,7 @@ ${activeEvidence}
             </section>
 
             {/* 逐条证据 */}
-            <section style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <section style={{ background: "#fff", borderRadius: 12, padding: "16px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", borderLeft: "3px solid #3b82f6", paddingLeft: 10 }}>
                 诊断证据明细（条款 0~9）
               </h2>
@@ -526,7 +526,7 @@ ${activeEvidence}
 
             {/* 鉴别诊断 */}
             {result.differential.length > 0 && (
-              <section style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+              <section style={{ background: "#fff", borderRadius: 12, padding: "16px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", borderLeft: "3px solid #f59e0b", paddingLeft: 10 }}>鉴别诊断提示</h2>
                 {result.differential.map((d, i) => (
                   <div key={i} style={{ padding: "8px 12px", background: "#fffbeb", borderRadius: 8, marginBottom: 6, border: "1px solid #fde68a" }}>
@@ -539,7 +539,7 @@ ${activeEvidence}
 
             {/* 备注 */}
             {result.conclusion.remarks.length > 0 && (
-              <section style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+              <section style={{ background: "#fff", borderRadius: 12, padding: "16px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", borderLeft: "3px solid #6b7280", paddingLeft: 10 }}>备注</h2>
                 {result.conclusion.remarks.map((r, i) => (
                   <div key={i} style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.7 }}>• {r}</div>
@@ -548,7 +548,7 @@ ${activeEvidence}
             )}
 
             {/* LLM 生成描述 */}
-            <section style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <section style={{ background: "#fff", borderRadius: 12, padding: "16px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", borderLeft: "3px solid #8b5cf6", paddingLeft: 10 }}>
                 LLM 诊断描述
               </h2>
